@@ -2,6 +2,7 @@ package voxel_engine
 
 import "core:fmt"
 import "vendor:glfw"
+
 import gl "vendor:OpenGL"
 
 Application :: struct {
@@ -42,6 +43,7 @@ run_game :: proc(app: ^Application) {
         
 
         gl.Clear(gl.COLOR_BUFFER_BIT)
+        
 
         
         glfw.SwapBuffers(app.glfw_window)

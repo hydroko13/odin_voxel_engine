@@ -14,6 +14,8 @@ main :: proc() {
     defer voxel_engine.cleanup_game(&app)
 
     voxel_engine.run_game(&app)
+
+    return
     
 
 }
