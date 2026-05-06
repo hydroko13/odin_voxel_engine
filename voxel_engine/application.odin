@@ -69,6 +69,9 @@ run_game :: proc(app: ^Application) {
 }
 
 cleanup_game :: proc(app: ^Application) {
+
+    rendering.delete_shader_program(&app.shader_program)
+
     glfw.DestroyWindow(app.glfw_window)
     glfw.Terminate()
 

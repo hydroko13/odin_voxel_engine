@@ -76,8 +76,34 @@ create_shader_program :: proc(vertex_shader_src: string, fragment_shader_source:
     }
 
 
+    shader_program.program_handle = gl.CreateProgram()    
     
+    gl.AttachShader(shader_program.program_handle, shader_program.vertex_shader_handle)
+    gl.AttachShader(shader_program.program_handle, shader_program.fragment_shader_handle)
 
+    gl.LinkProgram(shader_program.program_handle)
+
+    program_link_status : i32
+
+    gl.GetProgramiv(shader_program.program_handle, gl.LINK_STATUS, &program_link_status)
+
+    
+    if program_link_status == 0 {
+
+        link_log_len: i32
+        gl.GetProgramiv(shader_program.program_handle, gl.INFO_LOG_LENGTH, &link_log_len)
+
+        link_log_buf := make([]u8, link_log_len)
+        defer delete(link_log_buf)
+
+        gl.GetProgramInfoLog(shader_program.program_handle, link_log_len, nil, &link_log_buf[0])
+
+        link_log := transmute(string)link_log_buf
+
+
+        fmt.println("SHADER PROGRAM LINK ERROR: ")
+        fmt.println(link_log)        
+    }
 
 
     gl.DeleteShader(shader_program.fragment_shader_handle)
