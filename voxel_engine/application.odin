@@ -22,22 +22,36 @@ init_game :: proc() -> Application {
 
     app.glfw_window = glfw.CreateWindow(1280, 720, "Odin Voxel Engine", nil, nil)
 
+    
+
 
     glfw.MakeContextCurrent(app.glfw_window)
+
+    gl.load_up_to(3, 3, glfw.gl_set_proc_address)
 
     return app
 }
 
 run_game :: proc(app: ^Application) {
 
-    
+    gl.ClearColor(0.363, 0.837, 0.861, 1.0)
 
     for !glfw.WindowShouldClose(app.glfw_window) {
-        glfw.PollEvents()
+        
+
+        
+
+        gl.Clear(gl.COLOR_BUFFER_BIT)
+
+        
         glfw.SwapBuffers(app.glfw_window)
+
+        glfw.PollEvents()
     }   
 }
 
 cleanup_game :: proc(app: ^Application) {
+    glfw.DestroyWindow(app.glfw_window)
     glfw.Terminate()
+
 }
