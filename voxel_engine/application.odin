@@ -10,7 +10,9 @@ import gl "vendor:OpenGL"
 
 Application :: struct {
     glfw_window: glfw.WindowHandle,
-    shader_program: rendering.ShaderProgram
+    shader_program: rendering.ShaderProgram,
+    vao: rendering.VertexArray,
+    vbo: rendering.VertexBuffer,
 
 }
 
@@ -34,6 +36,8 @@ init_game :: proc() -> Application {
 
     gl.load_up_to(3, 3, glfw.gl_set_proc_address)
 
+    gl.Viewport(0, 0, 1280, 720)
+
     full_frag_path, frag_path_err := filepath.join({"resources", "frag.glsl"}, context.allocator)
     full_vert_path, vert_path_err := filepath.join({"resources", "vert.glsl"}, context.allocator)
 
@@ -44,9 +48,33 @@ init_game :: proc() -> Application {
     defer delete(frag_dat)
     defer delete(vert_dat)
 
+    vertices := [?]f32{
+        -0.5, -0.5, 0.0,
+        0.0, 0.5, 0.0,
+        0.5, -0.5, 0.0
+    }
+
     app.shader_program = rendering.create_shader_program(transmute(string)vert_dat, transmute(string)frag_dat)
 
     rendering.use_shader_program(&app.shader_program)
+
+    app.vao = rendering.create_vertex_array()
+
+    
+
+    app.vbo = rendering.create_vertex_buffer()
+
+    rendering.bind_vertex_array(&app.vao)
+    
+    rendering.write_vertex_buffer(&app.vbo, len(vertices) * size_of(f32), &vertices[0])
+
+    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), uintptr(0))
+    gl.EnableVertexAttribArray(0)
+
+    gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+    gl.BindVertexArray(0)
+    
+
 
     return app
 }
@@ -57,11 +85,20 @@ run_game :: proc(app: ^Application) {
 
     for !glfw.WindowShouldClose(app.glfw_window) {
         
-
+        err := gl.GetError() 
+        if err != gl.NO_ERROR {
+            fmt.println(err)        
+        }
+    
         
 
         gl.Clear(gl.COLOR_BUFFER_BIT)
         
+        rendering.use_shader_program(&app.shader_program)
+
+        rendering.bind_vertex_array(&app.vao)
+
+        gl.DrawArrays(gl.TRIANGLES, 0, 3)
 
         
         glfw.SwapBuffers(app.glfw_window)
@@ -72,7 +109,11 @@ run_game :: proc(app: ^Application) {
 
 cleanup_game :: proc(app: ^Application) {
 
+    rendering.delete_vertex_buffer(&app.vbo)
+    rendering.delete_vertex_array(&app.vao)
+    
     rendering.delete_shader_program(&app.shader_program)
+
 
     glfw.DestroyWindow(app.glfw_window)
     glfw.Terminate()
