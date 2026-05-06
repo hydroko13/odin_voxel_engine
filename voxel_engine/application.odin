@@ -49,9 +49,9 @@ init_game :: proc() -> Application {
     defer delete(vert_dat)
 
     vertices := [?]f32{
-        -0.5, -0.5, 0.0,
-        0.0, 0.5, 0.0,
-        0.5, -0.5, 0.0
+        -0.5, -0.5, 0.0,   1.0, 0.0, 0.0,
+        0.0, 0.5, 0.0,   1.0, 1.0, 0.0,
+        0.5, -0.5, 0.0,   0.0, 1.0, 0.0,
     }
 
     app.shader_program = rendering.create_shader_program(transmute(string)vert_dat, transmute(string)frag_dat)
@@ -68,11 +68,11 @@ init_game :: proc() -> Application {
     
     rendering.write_vertex_buffer(&app.vbo, len(vertices) * size_of(f32), &vertices[0])
 
-    gl.VertexAttribPointer(0, 3, gl.FLOAT, gl.FALSE, 3 * size_of(f32), uintptr(0))
-    gl.EnableVertexAttribArray(0)
+    rendering.vertex_array_attrib(&app.vao, 0, gl.FLOAT, 3, size_of(f32) * 6, 0)
+    rendering.vertex_array_attrib(&app.vao, 1, gl.FLOAT, 3, size_of(f32) * 6, 3 * size_of(f32))
 
-    gl.BindBuffer(gl.ARRAY_BUFFER, 0)
-    gl.BindVertexArray(0)
+    rendering.unbind_vertex_buffer()
+    rendering.unbind_vertex_array()
     
 
 

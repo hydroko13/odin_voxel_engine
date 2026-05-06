@@ -28,3 +28,7 @@ bind_vertex_buffer :: proc(vertex_buffer: ^VertexBuffer) {
 delete_vertex_buffer :: proc(vertex_buffer: ^VertexBuffer) {
     gl.DeleteBuffers(1, &vertex_buffer.vertex_buffer_handle)
 }
+
+unbind_vertex_buffer :: proc() {
+    gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+}
