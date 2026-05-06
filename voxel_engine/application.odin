@@ -1,12 +1,16 @@
 package voxel_engine
 
 import "core:fmt"
+import "core:path/filepath"
+import "core:os"
 import "vendor:glfw"
+import "../rendering"
 
 import gl "vendor:OpenGL"
 
 Application :: struct {
-    glfw_window: glfw.WindowHandle
+    glfw_window: glfw.WindowHandle,
+    shader_program: rendering.ShaderProgram
 
 }
 
@@ -29,6 +33,18 @@ init_game :: proc() -> Application {
     glfw.MakeContextCurrent(app.glfw_window)
 
     gl.load_up_to(3, 3, glfw.gl_set_proc_address)
+
+    full_frag_path, frag_path_err := filepath.join({"resources", "frag.glsl"}, context.allocator)
+    full_vert_path, vert_path_err := filepath.join({"resources", "vert.glsl"}, context.allocator)
+
+
+    frag_dat, frag_err := os.read_entire_file(full_frag_path, context.allocator)
+    vert_dat, vert_err := os.read_entire_file(full_vert_path, context.allocator)
+
+    defer delete(frag_dat)
+    defer delete(vert_dat)
+
+    app.shader_program = rendering.create_shader_program(transmute(string)vert_dat, transmute(string)frag_dat)
 
     return app
 }
