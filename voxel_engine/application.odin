@@ -3,6 +3,7 @@ package voxel_engine
 import "core:fmt"
 import "core:path/filepath"
 import "core:os"
+import "core:math/linalg/glsl"
 import "vendor:glfw"
 import "../rendering"
 
@@ -13,7 +14,9 @@ Application :: struct {
     shader_program: rendering.ShaderProgram,
     vao: rendering.VertexArray,
     vbo: rendering.VertexBuffer,
-
+    camera: Camera,
+    projection: glsl.mat4,
+    model: glsl.mat4,
 }
 
 init_game :: proc() -> Application {
@@ -30,7 +33,7 @@ init_game :: proc() -> Application {
     app.glfw_window = glfw.CreateWindow(1280, 720, "Odin Voxel Engine", nil, nil)
 
     
-
+    glfw.SetInputMode(app.glfw_window, glfw.CURSOR, glfw.CURSOR_DISABLED)
 
     glfw.MakeContextCurrent(app.glfw_window)
 
@@ -75,6 +78,12 @@ init_game :: proc() -> Application {
     rendering.unbind_vertex_array()
     
 
+    app.camera = Camera{90.0, 0.0, glsl.vec3{0.0, 0.0, -3.0}}
+    
+    app.projection = glsl.mat4Perspective(glsl.radians(f32(45.0)), 1280.0 / 720.0, 0.01, 1000.0)
+
+    app.model = glsl.mat4(1.0)
+
 
     return app
 }
@@ -83,18 +92,30 @@ run_game :: proc(app: ^Application) {
 
     gl.ClearColor(0.363, 0.837, 0.861, 1.0)
 
-    for !glfw.WindowShouldClose(app.glfw_window) {
+    viewLoc := gl.GetUniformLocation(app.shader_program.program_handle, "view")
+    projLoc := gl.GetUniformLocation(app.shader_program.program_handle, "proj")
+    modelLoc := gl.GetUniformLocation(app.shader_program.program_handle, "model")
+
+    for !glfw.WindowShouldClose(app.glfw_window) { 
         
-        err := gl.GetError() 
-        if err != gl.NO_ERROR {
-            fmt.println(err)        
+        if glfw.GetKey(app.glfw_window, glfw.KEY_ESCAPE) == 1 {
+            glfw.SetWindowShouldClose(app.glfw_window, true)
         }
-    
-        
 
         gl.Clear(gl.COLOR_BUFFER_BIT)
         
         rendering.use_shader_program(&app.shader_program)
+
+        viewMat := camera_get_view_matrix(&app.camera)
+
+        gl.UniformMatrix4fv(viewLoc, 1, gl.FALSE, raw_data(&viewMat))
+
+        gl.UniformMatrix4fv(modelLoc, 1, gl.FALSE, raw_data(&app.model))
+        gl.UniformMatrix4fv(projLoc, 1, gl.FALSE, raw_data(&app.projection))
+        
+
+
+
 
         rendering.bind_vertex_array(&app.vao)
 
