@@ -46,6 +46,8 @@ init_game :: proc() -> Application {
 
     app.shader_program = rendering.create_shader_program(transmute(string)vert_dat, transmute(string)frag_dat)
 
+    rendering.use_shader_program(&app.shader_program)
+
     return app
 }
 

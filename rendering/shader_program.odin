@@ -112,6 +112,10 @@ create_shader_program :: proc(vertex_shader_src: string, fragment_shader_source:
     return shader_program
 }
 
+use_shader_program :: proc(shader_program: ^ShaderProgram) {
+    gl.UseProgram(shader_program.program_handle)
+}
+
 delete_shader_program :: proc(shader_program: ^ShaderProgram) {
     gl.DeleteProgram(shader_program.program_handle)
 }
