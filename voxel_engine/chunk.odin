@@ -145,6 +145,17 @@ update_chunk :: proc(chunk: ^Chunk) {
 						}
 					}
 
+					if y > 0 {
+						if chunk.chunk_data_ptr.block_data[x][z][y - 1] != 0 {
+							include_bottom = false
+						}
+					}
+					if y < 255 {
+						if chunk.chunk_data_ptr.block_data[x][z][y + 1] != 0 {
+							include_top = false
+						}
+					}
+
 
 					if include_left {
 						append(&chunk.vertex_data, 0.0 + f32(x))
@@ -339,97 +350,103 @@ update_chunk :: proc(chunk: ^Chunk) {
 						indices_idx += 4
 					}
 
-					append(&chunk.vertex_data, 0.0 + f32(x))
-					append(&chunk.vertex_data, 0.0 + f32(y))
-					append(&chunk.vertex_data, 0.0 + f32(z))
+					if include_bottom {
 
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 0.0)
-					append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
 
-
-					append(&chunk.vertex_data, 0.0 + f32(x))
-					append(&chunk.vertex_data, 0.0 + f32(y))
-					append(&chunk.vertex_data, 1.0 + f32(z))
-
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
 
 
-					append(&chunk.vertex_data, 1.0 + f32(x))
-					append(&chunk.vertex_data, 0.0 + f32(y))
-					append(&chunk.vertex_data, 1.0 + f32(z))
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
 
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 0.0)
-					append(&chunk.vertex_data, 0.0)
-
-
-					append(&chunk.vertex_data, 1.0 + f32(x))
-					append(&chunk.vertex_data, 0.0 + f32(y))
-					append(&chunk.vertex_data, 0.0 + f32(z))
-
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
 
 
-					append(&chunk.index_data, u32(0 + indices_idx))
-					append(&chunk.index_data, u32(1 + indices_idx))
-					append(&chunk.index_data, u32(2 + indices_idx))
-					append(&chunk.index_data, u32(0 + indices_idx))
-					append(&chunk.index_data, u32(3 + indices_idx))
-					append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
 
 
-					indices_idx += 4
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
 
-					append(&chunk.vertex_data, 0.0 + f32(x))
-					append(&chunk.vertex_data, 1.0 + f32(y))
-					append(&chunk.vertex_data, 0.0 + f32(z))
-
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 0.0)
-					append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
 
 
-					append(&chunk.vertex_data, 0.0 + f32(x))
-					append(&chunk.vertex_data, 1.0 + f32(y))
-					append(&chunk.vertex_data, 1.0 + f32(z))
-
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 0.0)
-
-
-					append(&chunk.vertex_data, 1.0 + f32(x))
-					append(&chunk.vertex_data, 1.0 + f32(y))
-					append(&chunk.vertex_data, 1.0 + f32(z))
-
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 0.0)
-					append(&chunk.vertex_data, 0.0)
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(1 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
 
 
-					append(&chunk.vertex_data, 1.0 + f32(x))
-					append(&chunk.vertex_data, 1.0 + f32(y))
-					append(&chunk.vertex_data, 0.0 + f32(z))
+						indices_idx += 4
+					}
 
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 1.0)
-					append(&chunk.vertex_data, 0.0)
+					if include_top {
 
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
 
-					append(&chunk.index_data, u32(0 + indices_idx))
-					append(&chunk.index_data, u32(1 + indices_idx))
-					append(&chunk.index_data, u32(2 + indices_idx))
-					append(&chunk.index_data, u32(0 + indices_idx))
-					append(&chunk.index_data, u32(3 + indices_idx))
-					append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
 
 
-					indices_idx += 4
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(1 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+
+
+						indices_idx += 4
+					}
 
 
 				}
