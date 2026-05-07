@@ -2,6 +2,7 @@ package voxel_engine
 
 import "../rendering"
 import "core:math/linalg/glsl"
+import "core:math/noise"
 import gl "vendor:OpenGL"
 
 
@@ -42,8 +43,9 @@ generate_chunk :: proc(chunk: ^Chunk) {
 
 	for x in 0 ..< 16 {
 		for z in 0 ..< 16 {
+            height := int(noise.noise_2d(100, noise.Vec2{(f64(chunk.chunk_x) * 16.0 + f64(x) / 24.0), (f64(chunk.chunk_y) * 16.0 + f64(z) / 24.0)}) * 8 + 64)
 			for y in 0 ..< 256 {
-				if y > 64 {
+				if y > height {
 					chunk.chunk_data_ptr.block_data[x][z][y] = 0
 				} else {
 					chunk.chunk_data_ptr.block_data[x][z][y] = 1
