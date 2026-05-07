@@ -19,7 +19,7 @@ Chunk :: struct {
 	vbo:            rendering.VertexBuffer,
 	vao:            rendering.VertexArray,
 	ebo:            rendering.ElementBuffer,
-    model: glsl.mat4,
+	model:          glsl.mat4,
 }
 
 create_chunk :: proc(chunk_x: i32, chunk_y: i32) -> Chunk {
@@ -31,9 +31,8 @@ create_chunk :: proc(chunk_x: i32, chunk_y: i32) -> Chunk {
 	chunk.chunk_data_ptr = new(ChunkData)
 	chunk.vertex_data = make([dynamic]f32)
 	chunk.index_data = make([dynamic]u32)
-    chunk.model = glsl.mat4Translate(glsl.vec3{16.0 * f32(chunk_x), 0.0, 16.0 * f32(chunk_y)})
+	chunk.model = glsl.mat4Translate(glsl.vec3{16.0 * f32(chunk_x), 0.0, 16.0 * f32(chunk_y)})
 
-    
 
 	return chunk
 
@@ -43,7 +42,17 @@ generate_chunk :: proc(chunk: ^Chunk) {
 
 	for x in 0 ..< 16 {
 		for z in 0 ..< 16 {
-            height := int(noise.noise_2d(100, noise.Vec2{(f64(chunk.chunk_x) * 16.0 + f64(x) / 24.0), (f64(chunk.chunk_y) * 16.0 + f64(z) / 24.0)}) * 8 + 64)
+			height := int(
+				noise.noise_2d(
+					100,
+					noise.Vec2 {
+						(f64(chunk.chunk_x) * 16.0 + f64(x) / 24.0),
+						(f64(chunk.chunk_y) * 16.0 + f64(z) / 24.0),
+					},
+				) *
+					8 +
+				64,
+			)
 			for y in 0 ..< 256 {
 				if y > height {
 					chunk.chunk_data_ptr.block_data[x][z][y] = 0
@@ -58,12 +67,11 @@ generate_chunk :: proc(chunk: ^Chunk) {
 }
 
 init_chunk :: proc(chunk: ^Chunk) {
-    chunk.vao = rendering.create_vertex_array()
+	chunk.vao = rendering.create_vertex_array()
 
 
 	chunk.vbo = rendering.create_vertex_buffer()
 	chunk.ebo = rendering.create_element_buffer()
-
 
 
 }
@@ -73,8 +81,16 @@ upload_chunk :: proc(chunk: ^Chunk) {
 
 	rendering.bind_vertex_array(&chunk.vao)
 
-	rendering.write_vertex_buffer(&chunk.vbo, len(chunk.vertex_data) * size_of(f32), &chunk.vertex_data[0])
-	rendering.write_element_buffer(&chunk.ebo, len(chunk.index_data) * size_of(u32), &chunk.index_data[0])
+	rendering.write_vertex_buffer(
+		&chunk.vbo,
+		len(chunk.vertex_data) * size_of(f32),
+		&chunk.vertex_data[0],
+	)
+	rendering.write_element_buffer(
+		&chunk.ebo,
+		len(chunk.index_data) * size_of(u32),
+		&chunk.index_data[0],
+	)
 
 	rendering.vertex_array_attrib(&chunk.vao, 0, gl.FLOAT, 3, size_of(f32) * 6, 0)
 	rendering.vertex_array_attrib(&chunk.vao, 1, gl.FLOAT, 3, size_of(f32) * 6, 3 * size_of(f32))
@@ -99,6 +115,230 @@ update_chunk :: proc(chunk: ^Chunk) {
 
 				if block_id != 0 {
 
+
+					include_left := true
+					include_right := true
+					include_top := true
+					include_bottom := true
+					include_forward := true
+					include_backward := true
+
+					if z > 0 {
+						if chunk.chunk_data_ptr.block_data[x][z - 1][y] != 0 {
+							include_left = false
+						}
+					}
+					if z < 15 {
+						if chunk.chunk_data_ptr.block_data[x][z + 1][y] != 0 {
+							include_right = false
+						}
+					}
+
+					if x > 0 {
+						if chunk.chunk_data_ptr.block_data[x - 1][z][y] != 0 {
+							include_forward = false
+						}
+					}
+					if x < 15 {
+						if chunk.chunk_data_ptr.block_data[x + 1][z][y] != 0 {
+							include_backward = false
+						}
+					}
+
+
+					if include_left {
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(1 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+
+						indices_idx += 4
+					}
+
+					if include_right {
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(1 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+
+
+						indices_idx += 4
+					}
+
+					if include_forward {
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 0.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(1 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+
+
+						indices_idx += 4
+					}
+
+					if include_backward {
+
+
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 0.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 1.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.vertex_data, 1.0 + f32(x))
+						append(&chunk.vertex_data, 1.0 + f32(y))
+						append(&chunk.vertex_data, 0.0 + f32(z))
+
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 1.0)
+						append(&chunk.vertex_data, 0.0)
+
+
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(1 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+
+
+						indices_idx += 4
+					}
+
 					append(&chunk.vertex_data, 0.0 + f32(x))
 					append(&chunk.vertex_data, 0.0 + f32(y))
 					append(&chunk.vertex_data, 0.0 + f32(z))
@@ -108,6 +348,24 @@ update_chunk :: proc(chunk: ^Chunk) {
 					append(&chunk.vertex_data, 0.0)
 
 
+					append(&chunk.vertex_data, 0.0 + f32(x))
+					append(&chunk.vertex_data, 0.0 + f32(y))
+					append(&chunk.vertex_data, 1.0 + f32(z))
+
+					append(&chunk.vertex_data, 1.0)
+					append(&chunk.vertex_data, 1.0)
+					append(&chunk.vertex_data, 0.0)
+
+
+					append(&chunk.vertex_data, 1.0 + f32(x))
+					append(&chunk.vertex_data, 0.0 + f32(y))
+					append(&chunk.vertex_data, 1.0 + f32(z))
+
+					append(&chunk.vertex_data, 1.0)
+					append(&chunk.vertex_data, 0.0)
+					append(&chunk.vertex_data, 0.0)
+
+
 					append(&chunk.vertex_data, 1.0 + f32(x))
 					append(&chunk.vertex_data, 0.0 + f32(y))
 					append(&chunk.vertex_data, 0.0 + f32(z))
@@ -117,7 +375,17 @@ update_chunk :: proc(chunk: ^Chunk) {
 					append(&chunk.vertex_data, 0.0)
 
 
-					append(&chunk.vertex_data, 1.0 + f32(x))
+					append(&chunk.index_data, u32(0 + indices_idx))
+					append(&chunk.index_data, u32(1 + indices_idx))
+					append(&chunk.index_data, u32(2 + indices_idx))
+					append(&chunk.index_data, u32(0 + indices_idx))
+					append(&chunk.index_data, u32(3 + indices_idx))
+					append(&chunk.index_data, u32(2 + indices_idx))
+
+
+					indices_idx += 4
+
+					append(&chunk.vertex_data, 0.0 + f32(x))
 					append(&chunk.vertex_data, 1.0 + f32(y))
 					append(&chunk.vertex_data, 0.0 + f32(z))
 
@@ -127,6 +395,24 @@ update_chunk :: proc(chunk: ^Chunk) {
 
 
 					append(&chunk.vertex_data, 0.0 + f32(x))
+					append(&chunk.vertex_data, 1.0 + f32(y))
+					append(&chunk.vertex_data, 1.0 + f32(z))
+
+					append(&chunk.vertex_data, 1.0)
+					append(&chunk.vertex_data, 1.0)
+					append(&chunk.vertex_data, 0.0)
+
+
+					append(&chunk.vertex_data, 1.0 + f32(x))
+					append(&chunk.vertex_data, 1.0 + f32(y))
+					append(&chunk.vertex_data, 1.0 + f32(z))
+
+					append(&chunk.vertex_data, 1.0)
+					append(&chunk.vertex_data, 0.0)
+					append(&chunk.vertex_data, 0.0)
+
+
+					append(&chunk.vertex_data, 1.0 + f32(x))
 					append(&chunk.vertex_data, 1.0 + f32(y))
 					append(&chunk.vertex_data, 0.0 + f32(z))
 
@@ -142,6 +428,7 @@ update_chunk :: proc(chunk: ^Chunk) {
 					append(&chunk.index_data, u32(3 + indices_idx))
 					append(&chunk.index_data, u32(2 + indices_idx))
 
+
 					indices_idx += 4
 
 
@@ -156,21 +443,21 @@ update_chunk :: proc(chunk: ^Chunk) {
 
 draw_chunk :: proc(chunk: ^Chunk, shader_program: ^rendering.ShaderProgram) {
 
-    rendering.bind_element_buffer(&chunk.ebo)
-    rendering.bind_vertex_array(&chunk.vao)
+	rendering.bind_element_buffer(&chunk.ebo)
+	rendering.bind_vertex_array(&chunk.vao)
 
-    modelLoc := gl.GetUniformLocation(shader_program.program_handle, "model")
+	modelLoc := gl.GetUniformLocation(shader_program.program_handle, "model")
 
-    gl.UniformMatrix4fv(modelLoc, 1, gl.FALSE, raw_data(&chunk.model))
+	gl.UniformMatrix4fv(modelLoc, 1, gl.FALSE, raw_data(&chunk.model))
 
-    gl.DrawElements(gl.TRIANGLES, i32(len(chunk.index_data)), gl.UNSIGNED_INT, rawptr(uintptr(0)))
+	gl.DrawElements(gl.TRIANGLES, i32(len(chunk.index_data)), gl.UNSIGNED_INT, rawptr(uintptr(0)))
 
 }
 
 destroy_chunk :: proc(chunk: ^Chunk) {
 	free(chunk.chunk_data_ptr)
-    rendering.delete_vertex_array(&chunk.vao)
-    rendering.delete_vertex_buffer(&chunk.vbo)
-    rendering.delete_element_buffer(&chunk.ebo)
+	rendering.delete_vertex_array(&chunk.vao)
+	rendering.delete_vertex_buffer(&chunk.vbo)
+	rendering.delete_element_buffer(&chunk.ebo)
 
 }
