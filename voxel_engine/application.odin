@@ -13,6 +13,7 @@ Application :: struct {
     glfw_window: glfw.WindowHandle,
     shader_program: rendering.ShaderProgram,
     vao: rendering.VertexArray,
+    ebo: rendering.ElementBuffer,
     vbo: rendering.VertexBuffer,
     camera: Camera,
     projection: glsl.mat4,
@@ -53,8 +54,14 @@ init_game :: proc() -> Application {
 
     vertices := [?]f32{
         -0.5, -0.5, 0.0,   1.0, 0.0, 0.0,
-        0.0, 0.5, 0.0,   1.0, 1.0, 0.0,
+        -0.5, 0.5, 0.0,   1.0, 1.0, 0.0,
         0.5, -0.5, 0.0,   0.0, 1.0, 0.0,
+        0.5, 0.5, 0.0,   1.0, 1.0, 0.0,
+    }
+
+    indices := [?]u32{
+        2, 0, 1,
+        2, 3, 1
     }
 
     app.shader_program = rendering.create_shader_program(transmute(string)vert_dat, transmute(string)frag_dat)
@@ -66,15 +73,18 @@ init_game :: proc() -> Application {
     
 
     app.vbo = rendering.create_vertex_buffer()
+    app.ebo = rendering.create_element_buffer()
 
     rendering.bind_vertex_array(&app.vao)
     
     rendering.write_vertex_buffer(&app.vbo, len(vertices) * size_of(f32), &vertices[0])
+    rendering.write_element_buffer(&app.ebo, len(indices) * size_of(u32), &indices[0])
 
     rendering.vertex_array_attrib(&app.vao, 0, gl.FLOAT, 3, size_of(f32) * 6, 0)
     rendering.vertex_array_attrib(&app.vao, 1, gl.FLOAT, 3, size_of(f32) * 6, 3 * size_of(f32))
 
     rendering.unbind_vertex_buffer()
+
     rendering.unbind_vertex_array()
     
 
@@ -137,7 +147,7 @@ run_game :: proc(app: ^Application) {
 
         rendering.bind_vertex_array(&app.vao)
 
-        gl.DrawArrays(gl.TRIANGLES, 0, 3)
+        gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, rawptr(uintptr(0)))
 
         
         glfw.SwapBuffers(app.glfw_window)
