@@ -18,6 +18,7 @@ Application :: struct {
     camera: Camera,
     projection: glsl.mat4,
     model: glsl.mat4,
+    chunk: Chunk
 }
 
 init_game :: proc() -> Application {
@@ -93,6 +94,8 @@ init_game :: proc() -> Application {
     app.projection = glsl.mat4Perspective(glsl.radians(f32(45.0)), 1280.0 / 720.0, 0.01, 1000.0)
 
     app.model = glsl.mat4(1.0)
+    
+    app.chunk = create_chunk(0, 0)
 
 
     return app
@@ -157,6 +160,8 @@ run_game :: proc(app: ^Application) {
 }
 
 cleanup_game :: proc(app: ^Application) {
+
+    destroy_chunk(&app.chunk)
 
     rendering.delete_vertex_buffer(&app.vbo)
     rendering.delete_vertex_array(&app.vao)
