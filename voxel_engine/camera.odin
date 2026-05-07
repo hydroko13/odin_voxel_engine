@@ -9,6 +9,19 @@ Camera :: struct {
     pos: glsl.vec3
 }
 
+camera_move_forward :: proc(cam: ^Camera, delta: f32) {
+
+    rad_yaw := glsl.radians(cam.yaw)
+    rad_pitch := glsl.radians(cam.pitch)
+
+    cam.pos.x = cam.pos.x + ((glsl.cos(rad_yaw) * glsl.cos(rad_pitch)) * delta)
+
+    cam.pos.y = cam.pos.y + (glsl.sin(rad_pitch) * delta)
+
+    cam.pos.z = cam.pos.z + ((glsl.sin(rad_yaw) * glsl.cos(rad_pitch)) * delta)
+
+}
+
 camera_get_view_matrix :: proc(cam: ^Camera) -> glsl.mat4 {
 
     centre: glsl.vec3

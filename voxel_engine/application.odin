@@ -12,12 +12,8 @@ import gl "vendor:OpenGL"
 Application :: struct {
     glfw_window: glfw.WindowHandle,
     shader_program: rendering.ShaderProgram,
-    vao: rendering.VertexArray,
-    ebo: rendering.ElementBuffer,
-    vbo: rendering.VertexBuffer,
     camera: Camera,
     projection: glsl.mat4,
-    model: glsl.mat4,
     chunk: Chunk
 }
 
@@ -69,34 +65,39 @@ init_game :: proc() -> Application {
 
     rendering.use_shader_program(&app.shader_program)
 
-    app.vao = rendering.create_vertex_array()
+    gl.Enable(gl.DEPTH_TEST)
+
+    // app.vao = rendering.create_vertex_array()
 
     
 
-    app.vbo = rendering.create_vertex_buffer()
-    app.ebo = rendering.create_element_buffer()
+    // app.vbo = rendering.create_vertex_buffer()
+    // app.ebo = rendering.create_element_buffer()
 
-    rendering.bind_vertex_array(&app.vao)
+    // rendering.bind_vertex_array(&app.vao)
     
-    rendering.write_vertex_buffer(&app.vbo, len(vertices) * size_of(f32), &vertices[0])
-    rendering.write_element_buffer(&app.ebo, len(indices) * size_of(u32), &indices[0])
+    // rendering.write_vertex_buffer(&app.vbo, len(vertices) * size_of(f32), &vertices[0])
+    // rendering.write_element_buffer(&app.ebo, len(indices) * size_of(u32), &indices[0])
 
-    rendering.vertex_array_attrib(&app.vao, 0, gl.FLOAT, 3, size_of(f32) * 6, 0)
-    rendering.vertex_array_attrib(&app.vao, 1, gl.FLOAT, 3, size_of(f32) * 6, 3 * size_of(f32))
+    // rendering.vertex_array_attrib(&app.vao, 0, gl.FLOAT, 3, size_of(f32) * 6, 0)
+    // rendering.vertex_array_attrib(&app.vao, 1, gl.FLOAT, 3, size_of(f32) * 6, 3 * size_of(f32))
 
-    rendering.unbind_vertex_buffer()
+    // rendering.unbind_vertex_buffer()
 
-    rendering.unbind_vertex_array()
-    
+    // rendering.unbind_vertex_array()
 
     app.camera = Camera{90.0, 0.0, glsl.vec3{0.0, 0.0, -3.0}}
     
     app.projection = glsl.mat4Perspective(glsl.radians(f32(45.0)), 1280.0 / 720.0, 0.01, 1000.0)
-
-    app.model = glsl.mat4(1.0)
-    
+ 
     app.chunk = create_chunk(0, 0)
 
+    generate_chunk(&app.chunk)
+    init_chunk(&app.chunk)
+
+    update_chunk(&app.chunk)
+
+    upload_chunk(&app.chunk)
 
     return app
 }
@@ -107,20 +108,30 @@ run_game :: proc(app: ^Application) {
 
     viewLoc := gl.GetUniformLocation(app.shader_program.program_handle, "view")
     projLoc := gl.GetUniformLocation(app.shader_program.program_handle, "proj")
-    modelLoc := gl.GetUniformLocation(app.shader_program.program_handle, "model")
 
     lastMouseX, lastMouseY := glfw.GetCursorPos(app.glfw_window)
     lastTime := glfw.GetTime()
 
     for !glfw.WindowShouldClose(app.glfw_window) { 
+
+        time := glfw.GetTime()
+        deltaTime := f32(time - lastTime)
+        lastTime = time
         
         if glfw.GetKey(app.glfw_window, glfw.KEY_ESCAPE) == 1 {
             glfw.SetWindowShouldClose(app.glfw_window, true)
         }
 
-        time := glfw.GetTime()
-        deltaTime := f32(time - lastTime)
-        lastTime = time
+        if glfw.GetKey(app.glfw_window, glfw.KEY_W) == 1 {
+            camera_move_forward(&app.camera, deltaTime * 45)
+        }
+
+        if glfw.GetKey(app.glfw_window, glfw.KEY_S) == 1 {
+            camera_move_forward(&app.camera, deltaTime * -45)
+        }
+
+
+
         mouseX, mouseY := glfw.GetCursorPos(app.glfw_window)
 
         relX, relY := f32(mouseX - lastMouseX), f32(mouseY - lastMouseY)
@@ -133,7 +144,7 @@ run_game :: proc(app: ^Application) {
 
         app.camera.pitch = glsl.clamp(app.camera.pitch, -89, 89)
 
-        gl.Clear(gl.COLOR_BUFFER_BIT)
+        gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
         
         rendering.use_shader_program(&app.shader_program)
 
@@ -141,16 +152,10 @@ run_game :: proc(app: ^Application) {
 
         gl.UniformMatrix4fv(viewLoc, 1, gl.FALSE, raw_data(&viewMat))
 
-        gl.UniformMatrix4fv(modelLoc, 1, gl.FALSE, raw_data(&app.model))
         gl.UniformMatrix4fv(projLoc, 1, gl.FALSE, raw_data(&app.projection))
-        
 
+        draw_chunk(&app.chunk, &app.shader_program)
 
-
-
-        rendering.bind_vertex_array(&app.vao)
-
-        gl.DrawElements(gl.TRIANGLES, 6, gl.UNSIGNED_INT, rawptr(uintptr(0)))
 
         
         glfw.SwapBuffers(app.glfw_window)
@@ -162,9 +167,6 @@ run_game :: proc(app: ^Application) {
 cleanup_game :: proc(app: ^Application) {
 
     destroy_chunk(&app.chunk)
-
-    rendering.delete_vertex_buffer(&app.vbo)
-    rendering.delete_vertex_array(&app.vao)
     
     rendering.delete_shader_program(&app.shader_program)
 
