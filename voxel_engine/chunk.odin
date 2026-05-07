@@ -194,12 +194,13 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0)
 
 
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(1 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(1 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(3 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+
 
 						indices_idx += 4
 					}
@@ -244,9 +245,10 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(1 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(3 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
+
 
 
 						indices_idx += 4
@@ -292,10 +294,9 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(1 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(3 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
-
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
 
 						indices_idx += 4
 					}
@@ -339,12 +340,13 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0)
 
 
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(1 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(1 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(3 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+
 
 
 						indices_idx += 4
@@ -388,12 +390,13 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0)
 
 
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(1 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(1 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(3 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+
 
 
 						indices_idx += 4
@@ -440,9 +443,9 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(1 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(3 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
 
 
 						indices_idx += 4

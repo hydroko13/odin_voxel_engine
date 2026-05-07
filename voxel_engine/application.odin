@@ -66,6 +66,7 @@ init_game :: proc() -> Application {
     rendering.use_shader_program(&app.shader_program)
 
     gl.Enable(gl.DEPTH_TEST)
+    gl.Enable(gl.CULL_FACE)
 
     // app.vao = rendering.create_vertex_array()
 
