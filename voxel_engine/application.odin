@@ -96,11 +96,29 @@ run_game :: proc(app: ^Application) {
     projLoc := gl.GetUniformLocation(app.shader_program.program_handle, "proj")
     modelLoc := gl.GetUniformLocation(app.shader_program.program_handle, "model")
 
+    lastMouseX, lastMouseY := glfw.GetCursorPos(app.glfw_window)
+    lastTime := glfw.GetTime()
+
     for !glfw.WindowShouldClose(app.glfw_window) { 
         
         if glfw.GetKey(app.glfw_window, glfw.KEY_ESCAPE) == 1 {
             glfw.SetWindowShouldClose(app.glfw_window, true)
         }
+
+        time := glfw.GetTime()
+        deltaTime := f32(time - lastTime)
+        lastTime = time
+        mouseX, mouseY := glfw.GetCursorPos(app.glfw_window)
+
+        relX, relY := f32(mouseX - lastMouseX), f32(mouseY - lastMouseY)
+
+        lastMouseX = mouseX
+        lastMouseY = mouseY
+
+        app.camera.yaw += relX * deltaTime * 19
+        app.camera.pitch -= relY * deltaTime * 19    
+
+        app.camera.pitch = glsl.clamp(app.camera.pitch, -89, 89)
 
         gl.Clear(gl.COLOR_BUFFER_BIT)
         
