@@ -2,6 +2,7 @@ package voxel_engine
 
 import "../rendering"
 import "core:fmt"
+import "core:math"
 import "core:math/linalg/glsl"
 import "core:math/rand"
 import "core:os"
@@ -24,40 +25,34 @@ Application :: struct {
 	chunks:         [dynamic]Chunk,
 }
 
+ChunkWorkerArgs :: struct {
+	send_chan: chan.Chan(Chunk, .Send),
+	recv_chan: chan.Chan(glsl.ivec2, .Recv),
+}
 
-chunk_gen_worker :: proc(send_chan: chan.Chan(Chunk, .Send)) {
+chunk_gen_worker :: proc(args: ChunkWorkerArgs) {
 
-	chunk_generated_positions := make([dynamic]glsl.ivec2, 0, 10)
+	send_chan := args.send_chan
+	recv_chan := args.recv_chan
 
-
-	gen_radius: i32 = 5
-
-	gen_origin_x: i32 = 0
-	gen_origin_y: i32 = 0
 
 	for {
 
-		rx := rand.int32_range(-gen_radius, gen_radius)
-		ry := rand.int32_range(-gen_radius, gen_radius)
+		pos, _ := chan.recv(recv_chan)
 
-		chunk_x := rx + gen_origin_x
-		chunk_y := ry + gen_origin_y
-		chunk_pos := glsl.ivec2{chunk_x, chunk_y}
-		if !slice.contains(chunk_generated_positions[:], chunk_pos) {
-			chunk: Chunk = create_chunk(chunk_x, chunk_y)
-			append(&chunk_generated_positions, chunk_pos)
+		chunk: Chunk = create_chunk(pos.x, pos.y)
 
-			generate_chunk(&chunk)
-			update_chunk(&chunk)
+		generate_chunk(&chunk)
+		update_chunk(&chunk)
 
 
-			chan.send(send_chan, chunk)
+		chan.send(send_chan, chunk)
 
-			chunk.chunk_data_ptr = nil
-			chunk.index_data = nil
-			chunk.vertex_data = nil
+		chunk.chunk_data_ptr = nil
+		chunk.index_data = nil
+		chunk.vertex_data = nil
 
-		}
+	
 
 	}
 }
@@ -125,9 +120,14 @@ init_game :: proc() -> Application {
 
 	// rendering.unbind_vertex_array()
 
-	app.camera = Camera{90.0, 0.0, glsl.vec3{0.0, 0.0, -3.0}}
+	app.camera = Camera{90.0, 0.0, glsl.vec3{0.0, 80, 0.0}}
 
-	app.projection = glsl.mat4Perspective(glsl.radians(f32(45.0)), 1280.0 / 720.0, 0.01, 10000000.0)
+	app.projection = glsl.mat4Perspective(
+		glsl.radians(f32(45.0)),
+		1280.0 / 720.0,
+		0.01,
+		10000000.0,
+	)
 
 	// app.chunk = create_chunk(0, 0)
 
@@ -153,18 +153,43 @@ run_game :: proc(app: ^Application) {
 
 	wait_group: sync.Wait_Group
 
-	newlyGeneratedChunks, _ := chan.create_buffered(chan.Chan(Chunk), 15, context.allocator)
-
-	defer chan.destroy(newlyGeneratedChunks)
-
-
-	chunkGenThread := thread.create_and_start_with_poly_data(
-		chan.as_send(newlyGeneratedChunks),
-		chunk_gen_worker,
-        init_context=context,
+	newlyGeneratedChunks, _ := chan.create_buffered(chan.Chan(Chunk), 32, context.allocator)
+	chunkPositionsToGenerate, _ := chan.create_buffered(
+		chan.Chan(glsl.ivec2),
+		64,
+		context.allocator,
 	)
 
 
+	chunksPositionsAlreadyGenerated := make([dynamic]glsl.ivec2, 0, 250)
+
+	defer delete(chunksPositionsAlreadyGenerated)
+
+	last_chunk_origin_x := 0
+	last_chunk_origin_y := 0
+
+	gen_radius := 8
+
+	defer chan.destroy(newlyGeneratedChunks)
+
+	workerThreads := make([dynamic]^thread.Thread, 0, 10)
+
+	defer delete(workerThreads)
+
+	for thread_id in 0 ..< 8 {
+		chunkGenThread := thread.create_and_start_with_poly_data(
+			ChunkWorkerArgs {
+				chan.as_send(newlyGeneratedChunks),
+				chan.as_recv(chunkPositionsToGenerate),
+			},
+			chunk_gen_worker,
+			init_context = context,
+		)
+
+		append(&workerThreads, chunkGenThread)
+
+
+	}
 
 	for !glfw.WindowShouldClose(app.glfw_window) {
 
@@ -173,18 +198,23 @@ run_game :: proc(app: ^Application) {
 		lastTime = time
 
 
-		new_chunk, ok := chan.try_recv(newlyGeneratedChunks)
+		for {
+			new_chunk, ok := chan.try_recv(newlyGeneratedChunks)
 
-		if ok {
-			init_chunk(&new_chunk)
-			upload_chunk(&new_chunk)
+			if ok {
+				init_chunk(&new_chunk)
+				upload_chunk(&new_chunk)
 
-			append(&app.chunks, new_chunk)
+				append(&app.chunks, new_chunk)
 
-			new_chunk.index_data = nil
-			new_chunk.vertex_data = nil
-			new_chunk.chunk_data_ptr = nil
+				new_chunk.index_data = nil
+				new_chunk.vertex_data = nil
+				new_chunk.chunk_data_ptr = nil
 
+
+			} else {
+				break
+			}
 
 		}
 
@@ -199,6 +229,24 @@ run_game :: proc(app: ^Application) {
 
 		if glfw.GetKey(app.glfw_window, glfw.KEY_S) == 1 {
 			camera_move_forward(&app.camera, deltaTime * -45)
+		}
+
+		chunk_origin_x := int(math.floor(app.camera.pos.x / 16.0))
+		chunk_origin_y := int(math.floor(app.camera.pos.z / 16.0))
+
+		for x in -gen_radius ..= gen_radius {
+			for z in -gen_radius ..= gen_radius {
+				pos := glsl.ivec2{i32(x + chunk_origin_x), i32(z + chunk_origin_y)}
+
+				if !slice.contains(chunksPositionsAlreadyGenerated[:], pos) {
+
+					ok := chan.try_send(chunkPositionsToGenerate, pos)
+					if ok {
+						append(&chunksPositionsAlreadyGenerated, pos)
+					}
+				}
+
+			}
 		}
 
 
