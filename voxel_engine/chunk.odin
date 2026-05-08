@@ -466,13 +466,16 @@ update_chunk :: proc(chunk: ^Chunk) {
 		}
 	}
 
+	assert(len(chunk.vertex_data) % 6 == 0) // 6 floats per vertex
+	assert(len(chunk.index_data) % 6 == 0)
 
 }
 
 
 draw_chunk :: proc(chunk: ^Chunk, shader_program: ^rendering.ShaderProgram) {
 
-	rendering.bind_element_buffer(&chunk.ebo)
+	//rendering.bind_element_buffer(&chunk.ebo)
+	// WHY THE FUCK DOES COMMENTING THAT OUT FIX THE CHUNK HOLES ISSUE????
 	rendering.bind_vertex_array(&chunk.vao)
 
 	modelLoc := gl.GetUniformLocation(shader_program.program_handle, "model")
