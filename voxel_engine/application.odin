@@ -127,7 +127,7 @@ init_game :: proc() -> Application {
 
 	app.camera = Camera{90.0, 0.0, glsl.vec3{0.0, 0.0, -3.0}}
 
-	app.projection = glsl.mat4Perspective(glsl.radians(f32(45.0)), 1280.0 / 720.0, 0.01, 1000.0)
+	app.projection = glsl.mat4Perspective(glsl.radians(f32(45.0)), 1280.0 / 720.0, 0.01, 10000000.0)
 
 	// app.chunk = create_chunk(0, 0)
 
