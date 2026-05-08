@@ -52,7 +52,6 @@ chunk_gen_worker :: proc(args: ChunkWorkerArgs) {
 		chunk.index_data = nil
 		chunk.vertex_data = nil
 
-	
 
 	}
 }
@@ -236,15 +235,20 @@ run_game :: proc(app: ^Application) {
 
 		for x in -gen_radius ..= gen_radius {
 			for z in -gen_radius ..= gen_radius {
-				pos := glsl.ivec2{i32(x + chunk_origin_x), i32(z + chunk_origin_y)}
 
-				if !slice.contains(chunksPositionsAlreadyGenerated[:], pos) {
+				dist := x * x + z * z
+				if dist < gen_radius * gen_radius {
+					pos := glsl.ivec2{i32(x + chunk_origin_x), i32(z + chunk_origin_y)}
 
-					ok := chan.try_send(chunkPositionsToGenerate, pos)
-					if ok {
-						append(&chunksPositionsAlreadyGenerated, pos)
+					if !slice.contains(chunksPositionsAlreadyGenerated[:], pos) {
+
+						ok := chan.try_send(chunkPositionsToGenerate, pos)
+						if ok {
+							append(&chunksPositionsAlreadyGenerated, pos)
+						}
 					}
 				}
+
 
 			}
 		}
