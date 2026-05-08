@@ -3,7 +3,9 @@ package voxel_engine
 import "../rendering"
 import "core:math/linalg/glsl"
 import "core:math/noise"
+import "core:fmt"
 import gl "vendor:OpenGL"
+
 
 
 ChunkData :: struct {
@@ -29,8 +31,8 @@ create_chunk :: proc(chunk_x: i32, chunk_y: i32) -> Chunk {
 	chunk.chunk_y = chunk_y
 
 	chunk.chunk_data_ptr = new(ChunkData)
-	chunk.vertex_data = make([dynamic]f32)
-	chunk.index_data = make([dynamic]u32)
+	chunk.vertex_data = make([dynamic]f32, 0, 100000)
+	chunk.index_data = make([dynamic]u32, 0, 10000)
 	chunk.model = glsl.mat4Translate(glsl.vec3{16.0 * f32(chunk_x), 0.0, 16.0 * f32(chunk_y)})
 
 
@@ -46,8 +48,8 @@ generate_chunk :: proc(chunk: ^Chunk) {
 				noise.noise_2d(
 					100,
 					noise.Vec2 {
-						(f64(chunk.chunk_x) * 16.0 + f64(x) / 24.0),
-						(f64(chunk.chunk_y) * 16.0 + f64(z) / 24.0),
+						((f64(chunk.chunk_x) * 16.0 + f64(x)) / 24.0),
+						((f64(chunk.chunk_y) * 16.0 + f64(z)) / 24.0),
 					},
 				) *
 					8 +
@@ -194,12 +196,12 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0)
 
 
-						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(1 + indices_idx))
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(3 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
 
 
 						indices_idx += 4
@@ -240,6 +242,7 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 1.0)
 						append(&chunk.vertex_data, 1.0)
 						append(&chunk.vertex_data, 0.0)
+
 
 
 						append(&chunk.index_data, u32(0 + indices_idx))
@@ -291,6 +294,7 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0)
 
 
+
 						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(1 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
@@ -340,12 +344,13 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0)
 
 
-						append(&chunk.index_data, u32(2 + indices_idx))
+
+						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(1 + indices_idx))
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(3 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
 
 
 
@@ -390,12 +395,14 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0)
 
 
-						append(&chunk.index_data, u32(2 + indices_idx))
+
+
+						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(1 + indices_idx))
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(0 + indices_idx))
-						append(&chunk.index_data, u32(3 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(2 + indices_idx))
+						append(&chunk.index_data, u32(3 + indices_idx))
+						append(&chunk.index_data, u32(0 + indices_idx))
 
 
 
@@ -440,13 +447,14 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0)
 
 
+
+
 						append(&chunk.index_data, u32(0 + indices_idx))
 						append(&chunk.index_data, u32(1 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
 						append(&chunk.index_data, u32(2 + indices_idx))
 						append(&chunk.index_data, u32(3 + indices_idx))
 						append(&chunk.index_data, u32(0 + indices_idx))
-
 
 						indices_idx += 4
 					}
@@ -457,6 +465,7 @@ update_chunk :: proc(chunk: ^Chunk) {
 			}
 		}
 	}
+
 
 }
 
@@ -474,8 +483,24 @@ draw_chunk :: proc(chunk: ^Chunk, shader_program: ^rendering.ShaderProgram) {
 
 }
 
-destroy_chunk :: proc(chunk: ^Chunk) {
+free_chunk_data :: proc(chunk: ^Chunk) {
 	free(chunk.chunk_data_ptr)
+
+}
+
+
+free_chunk_mesh :: proc(chunk: ^Chunk) {
+
+	delete(chunk.index_data)
+	delete(chunk.vertex_data)
+
+}
+
+
+
+destroy_chunk :: proc(chunk: ^Chunk) {
+	free_chunk_data(chunk)
+	free_chunk_mesh(chunk)
 	rendering.delete_vertex_array(&chunk.vao)
 	rendering.delete_vertex_buffer(&chunk.vbo)
 	rendering.delete_element_buffer(&chunk.ebo)

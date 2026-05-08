@@ -1,178 +1,252 @@
 package voxel_engine
 
-import "core:fmt"
-import "core:path/filepath"
-import "core:os"
-import "core:math/linalg/glsl"
-import "vendor:glfw"
 import "../rendering"
+import "core:fmt"
+import "core:math/linalg/glsl"
+import "core:math/rand"
+import "core:os"
+import "core:path/filepath"
+import "core:slice"
+import "core:sync"
+import "core:sync/chan"
+import "core:thread"
+import "core:time"
+import "vendor:glfw"
+
 
 import gl "vendor:OpenGL"
 
 Application :: struct {
-    glfw_window: glfw.WindowHandle,
-    shader_program: rendering.ShaderProgram,
-    camera: Camera,
-    projection: glsl.mat4,
-    chunk: Chunk
+	glfw_window:    glfw.WindowHandle,
+	shader_program: rendering.ShaderProgram,
+	camera:         Camera,
+	projection:     glsl.mat4,
+	chunks:         [dynamic]Chunk,
+}
+
+
+chunk_gen_worker :: proc(send_chan: chan.Chan(Chunk, .Send)) {
+
+	chunk_generated_positions := make([dynamic]glsl.ivec2, 0, 10)
+
+
+	gen_radius: i32 = 5
+
+	gen_origin_x: i32 = 0
+	gen_origin_y: i32 = 0
+
+	for {
+
+		rx := rand.int32_range(-gen_radius, gen_radius)
+		ry := rand.int32_range(-gen_radius, gen_radius)
+
+		chunk_x := rx + gen_origin_x
+		chunk_y := ry + gen_origin_y
+		chunk_pos := glsl.ivec2{chunk_x, chunk_y}
+		if !slice.contains(chunk_generated_positions[:], chunk_pos) {
+			chunk: Chunk = create_chunk(chunk_x, chunk_y)
+			append(&chunk_generated_positions, chunk_pos)
+
+			generate_chunk(&chunk)
+			update_chunk(&chunk)
+
+
+			chan.send(send_chan, chunk)
+
+			chunk.chunk_data_ptr = nil
+			chunk.index_data = nil
+			chunk.vertex_data = nil
+
+		}
+
+	}
 }
 
 init_game :: proc() -> Application {
-    app := Application{}
+	app := Application{}
 
 
-    glfw.Init()
+	glfw.Init()
 
-    glfw.WindowHint(glfw.RESIZABLE, 0)
-    glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 3)
-    glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3)
-    glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+	glfw.WindowHint(glfw.RESIZABLE, 0)
+	glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 3)
+	glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3)
+	glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 
-    app.glfw_window = glfw.CreateWindow(1280, 720, "Odin Voxel Engine", nil, nil)
-
-    
-    glfw.SetInputMode(app.glfw_window, glfw.CURSOR, glfw.CURSOR_DISABLED)
-
-    glfw.MakeContextCurrent(app.glfw_window)
-
-    gl.load_up_to(3, 3, glfw.gl_set_proc_address)
-
-    gl.Viewport(0, 0, 1280, 720)
-
-    full_frag_path, frag_path_err := filepath.join({"resources", "frag.glsl"}, context.allocator)
-    full_vert_path, vert_path_err := filepath.join({"resources", "vert.glsl"}, context.allocator)
+	app.glfw_window = glfw.CreateWindow(1280, 720, "Odin Voxel Engine", nil, nil)
 
 
-    frag_dat, frag_err := os.read_entire_file(full_frag_path, context.allocator)
-    vert_dat, vert_err := os.read_entire_file(full_vert_path, context.allocator)
+	glfw.SetInputMode(app.glfw_window, glfw.CURSOR, glfw.CURSOR_DISABLED)
 
-    defer delete(frag_dat)
-    defer delete(vert_dat)
+	glfw.MakeContextCurrent(app.glfw_window)
 
-    vertices := [?]f32{
-        -0.5, -0.5, 0.0,   1.0, 0.0, 0.0,
-        -0.5, 0.5, 0.0,   1.0, 1.0, 0.0,
-        0.5, -0.5, 0.0,   0.0, 1.0, 0.0,
-        0.5, 0.5, 0.0,   1.0, 1.0, 0.0,
-    }
+	gl.load_up_to(3, 3, glfw.gl_set_proc_address)
 
-    indices := [?]u32{
-        2, 0, 1,
-        2, 3, 1
-    }
+	gl.Viewport(0, 0, 1280, 720)
 
-    app.shader_program = rendering.create_shader_program(transmute(string)vert_dat, transmute(string)frag_dat)
+	full_frag_path, frag_path_err := filepath.join({"resources", "frag.glsl"}, context.allocator)
+	full_vert_path, vert_path_err := filepath.join({"resources", "vert.glsl"}, context.allocator)
 
-    rendering.use_shader_program(&app.shader_program)
 
-    gl.Enable(gl.DEPTH_TEST)
-    gl.Enable(gl.CULL_FACE)
+	frag_dat, frag_err := os.read_entire_file(full_frag_path, context.allocator)
+	vert_dat, vert_err := os.read_entire_file(full_vert_path, context.allocator)
 
-    // app.vao = rendering.create_vertex_array()
+	defer delete(frag_dat)
+	defer delete(vert_dat)
 
-    
+	app.chunks = make([dynamic]Chunk, 0, 10)
 
-    // app.vbo = rendering.create_vertex_buffer()
-    // app.ebo = rendering.create_element_buffer()
+	app.shader_program = rendering.create_shader_program(
+		transmute(string)vert_dat,
+		transmute(string)frag_dat,
+	)
 
-    // rendering.bind_vertex_array(&app.vao)
-    
-    // rendering.write_vertex_buffer(&app.vbo, len(vertices) * size_of(f32), &vertices[0])
-    // rendering.write_element_buffer(&app.ebo, len(indices) * size_of(u32), &indices[0])
+	rendering.use_shader_program(&app.shader_program)
 
-    // rendering.vertex_array_attrib(&app.vao, 0, gl.FLOAT, 3, size_of(f32) * 6, 0)
-    // rendering.vertex_array_attrib(&app.vao, 1, gl.FLOAT, 3, size_of(f32) * 6, 3 * size_of(f32))
+	gl.Enable(gl.DEPTH_TEST)
+	//gl.Enable(gl.CULL_FACE)
 
-    // rendering.unbind_vertex_buffer()
 
-    // rendering.unbind_vertex_array()
+	// app.vao = rendering.create_vertex_array()
 
-    app.camera = Camera{90.0, 0.0, glsl.vec3{0.0, 0.0, -3.0}}
-    
-    app.projection = glsl.mat4Perspective(glsl.radians(f32(45.0)), 1280.0 / 720.0, 0.01, 1000.0)
- 
-    app.chunk = create_chunk(0, 0)
 
-    generate_chunk(&app.chunk)
-    init_chunk(&app.chunk)
+	// app.vbo = rendering.create_vertex_buffer()
+	// app.ebo = rendering.create_element_buffer()
 
-    update_chunk(&app.chunk)
+	// rendering.bind_vertex_array(&app.vao)
 
-    upload_chunk(&app.chunk)
+	// rendering.write_vertex_buffer(&app.vbo, len(vertices) * size_of(f32), &vertices[0])
+	// rendering.write_element_buffer(&app.ebo, len(indices) * size_of(u32), &indices[0])
 
-    return app
+	// rendering.vertex_array_attrib(&app.vao, 0, gl.FLOAT, 3, size_of(f32) * 6, 0)
+	// rendering.vertex_array_attrib(&app.vao, 1, gl.FLOAT, 3, size_of(f32) * 6, 3 * size_of(f32))
+
+	// rendering.unbind_vertex_buffer()
+
+	// rendering.unbind_vertex_array()
+
+	app.camera = Camera{90.0, 0.0, glsl.vec3{0.0, 0.0, -3.0}}
+
+	app.projection = glsl.mat4Perspective(glsl.radians(f32(45.0)), 1280.0 / 720.0, 0.01, 1000.0)
+
+	// app.chunk = create_chunk(0, 0)
+
+	// generate_chunk(&app.chunk)
+	// init_chunk(&app.chunk)
+
+	// update_chunk(&app.chunk)
+
+	// upload_chunk(&app.chunk)
+
+	return app
 }
 
 run_game :: proc(app: ^Application) {
 
-    gl.ClearColor(0.363, 0.837, 0.861, 1.0)
+	gl.ClearColor(0.363, 0.837, 0.861, 1.0)
 
-    viewLoc := gl.GetUniformLocation(app.shader_program.program_handle, "view")
-    projLoc := gl.GetUniformLocation(app.shader_program.program_handle, "proj")
+	viewLoc := gl.GetUniformLocation(app.shader_program.program_handle, "view")
+	projLoc := gl.GetUniformLocation(app.shader_program.program_handle, "proj")
 
-    lastMouseX, lastMouseY := glfw.GetCursorPos(app.glfw_window)
-    lastTime := glfw.GetTime()
+	lastMouseX, lastMouseY := glfw.GetCursorPos(app.glfw_window)
+	lastTime := glfw.GetTime()
 
-    for !glfw.WindowShouldClose(app.glfw_window) { 
+	wait_group: sync.Wait_Group
 
-        time := glfw.GetTime()
-        deltaTime := f32(time - lastTime)
-        lastTime = time
-        
-        if glfw.GetKey(app.glfw_window, glfw.KEY_ESCAPE) == 1 {
-            glfw.SetWindowShouldClose(app.glfw_window, true)
-        }
+	newlyGeneratedChunks, _ := chan.create_buffered(chan.Chan(Chunk), 15, context.allocator)
 
-        if glfw.GetKey(app.glfw_window, glfw.KEY_W) == 1 {
-            camera_move_forward(&app.camera, deltaTime * 45)
-        }
+	defer chan.destroy(newlyGeneratedChunks)
 
-        if glfw.GetKey(app.glfw_window, glfw.KEY_S) == 1 {
-            camera_move_forward(&app.camera, deltaTime * -45)
-        }
+
+	chunkGenThread := thread.create_and_start_with_poly_data(
+		chan.as_send(newlyGeneratedChunks),
+		chunk_gen_worker,
+        init_context=context,
+	)
 
 
 
-        mouseX, mouseY := glfw.GetCursorPos(app.glfw_window)
+	for !glfw.WindowShouldClose(app.glfw_window) {
 
-        relX, relY := f32(mouseX - lastMouseX), f32(mouseY - lastMouseY)
-
-        lastMouseX = mouseX
-        lastMouseY = mouseY
-
-        app.camera.yaw += relX * deltaTime * 19
-        app.camera.pitch -= relY * deltaTime * 19    
-
-        app.camera.pitch = glsl.clamp(app.camera.pitch, -89, 89)
-
-        gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-        
-        rendering.use_shader_program(&app.shader_program)
-
-        viewMat := camera_get_view_matrix(&app.camera)
-
-        gl.UniformMatrix4fv(viewLoc, 1, gl.FALSE, raw_data(&viewMat))
-
-        gl.UniformMatrix4fv(projLoc, 1, gl.FALSE, raw_data(&app.projection))
-
-        draw_chunk(&app.chunk, &app.shader_program)
+		time := glfw.GetTime()
+		deltaTime := f32(time - lastTime)
+		lastTime = time
 
 
-        
-        glfw.SwapBuffers(app.glfw_window)
+		new_chunk, ok := chan.try_recv(newlyGeneratedChunks)
 
-        glfw.PollEvents()
-    }   
+		if ok {
+			init_chunk(&new_chunk)
+			upload_chunk(&new_chunk)
+
+			append(&app.chunks, new_chunk)
+
+			new_chunk.index_data = nil
+			new_chunk.vertex_data = nil
+			new_chunk.chunk_data_ptr = nil
+
+
+		}
+
+
+		if glfw.GetKey(app.glfw_window, glfw.KEY_ESCAPE) == 1 {
+			glfw.SetWindowShouldClose(app.glfw_window, true)
+		}
+
+		if glfw.GetKey(app.glfw_window, glfw.KEY_W) == 1 {
+			camera_move_forward(&app.camera, deltaTime * 45)
+		}
+
+		if glfw.GetKey(app.glfw_window, glfw.KEY_S) == 1 {
+			camera_move_forward(&app.camera, deltaTime * -45)
+		}
+
+
+		mouseX, mouseY := glfw.GetCursorPos(app.glfw_window)
+
+		relX, relY := f32(mouseX - lastMouseX), f32(mouseY - lastMouseY)
+
+		lastMouseX = mouseX
+		lastMouseY = mouseY
+
+		app.camera.yaw += relX * deltaTime * 19
+		app.camera.pitch -= relY * deltaTime * 19
+
+		app.camera.pitch = glsl.clamp(app.camera.pitch, -89, 89)
+
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		rendering.use_shader_program(&app.shader_program)
+
+		viewMat := camera_get_view_matrix(&app.camera)
+
+		gl.UniformMatrix4fv(viewLoc, 1, gl.FALSE, raw_data(&viewMat))
+
+		gl.UniformMatrix4fv(projLoc, 1, gl.FALSE, raw_data(&app.projection))
+
+		for &chunk in app.chunks {
+			draw_chunk(&chunk, &app.shader_program)
+		}
+
+
+		glfw.SwapBuffers(app.glfw_window)
+
+		glfw.PollEvents()
+	}
 }
 
 cleanup_game :: proc(app: ^Application) {
 
-    destroy_chunk(&app.chunk)
-    
-    rendering.delete_shader_program(&app.shader_program)
+	for &chunk in app.chunks {
+		destroy_chunk(&chunk)
+	}
+
+	delete(app.chunks)
+
+	rendering.delete_shader_program(&app.shader_program)
 
 
-    glfw.DestroyWindow(app.glfw_window)
-    glfw.Terminate()
+	glfw.DestroyWindow(app.glfw_window)
+	glfw.Terminate()
 
 }
