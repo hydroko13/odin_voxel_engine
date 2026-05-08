@@ -150,8 +150,6 @@ run_game :: proc(app: ^Application) {
 	lastMouseX, lastMouseY := glfw.GetCursorPos(app.glfw_window)
 	lastTime := glfw.GetTime()
 
-	wait_group: sync.Wait_Group
-
 	newlyGeneratedChunks, _ := chan.create_buffered(chan.Chan(Chunk), 32, context.allocator)
 	chunkPositionsToGenerate, _ := chan.create_buffered(
 		chan.Chan(glsl.ivec2),
