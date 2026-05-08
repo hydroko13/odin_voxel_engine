@@ -48,11 +48,11 @@ generate_chunk :: proc(chunk: ^Chunk) {
 				noise.noise_2d(
 					100,
 					noise.Vec2 {
-						((f64(chunk.chunk_x) * 16.0 + f64(x)) / 24.0),
-						((f64(chunk.chunk_y) * 16.0 + f64(z)) / 24.0),
+						((f64(chunk.chunk_x) * 16.0 + f64(x)) / 40.0),
+						((f64(chunk.chunk_y) * 16.0 + f64(z)) / 40.0),
 					},
 				) *
-					8 +
+					5 +
 				64,
 			)
 			for y in 0 ..< 256 {
