@@ -23,6 +23,7 @@ Application :: struct {
 	camera:         Camera,
 	projection:     glsl.mat4,
 	chunks:         [dynamic]Chunk,
+	block_texture_packer: TexturePacker
 }
 
 ChunkWorkerArgs :: struct {
@@ -94,6 +95,12 @@ init_game :: proc() -> Application {
 		transmute(string)vert_dat,
 		transmute(string)frag_dat,
 	)
+
+	app.block_texture_packer = create_texture_packer("block_textures")
+
+	texture_packer_add_file(&app.block_texture_packer, "dirt.png")
+	texture_packer_add_file(&app.block_texture_packer, "grass_side.png")
+	texture_packer_add_file(&app.block_texture_packer, "grass_top.png")
 
 	rendering.use_shader_program(&app.shader_program)
 
@@ -292,6 +299,7 @@ cleanup_game :: proc(app: ^Application) {
 	}
 
 	delete(app.chunks)
+	delete_texture_packer(&app.block_texture_packer)
 
 	rendering.delete_shader_program(&app.shader_program)
 
