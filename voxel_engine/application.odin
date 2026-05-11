@@ -81,6 +81,7 @@ init_game :: proc() -> Application {
 	glfw.SetInputMode(app.glfw_window, glfw.CURSOR, glfw.CURSOR_DISABLED)
 
 	glfw.MakeContextCurrent(app.glfw_window)
+	glfw.SwapInterval(0);
 
 	gl.load_up_to(3, 3, glfw.gl_set_proc_address)
 
@@ -189,7 +190,7 @@ run_game :: proc(app: ^Application) {
 	last_chunk_origin_x := 0
 	last_chunk_origin_y := 0
 
-	gen_radius := 8
+	gen_radius := 1
 
 	defer chan.destroy(newlyGeneratedChunks)
 
@@ -219,6 +220,7 @@ run_game :: proc(app: ^Application) {
 		deltaTime := f32(time - lastTime)
 		lastTime = time
 
+		fmt.println(1 / deltaTime);
 
 		for {
 			new_chunk, ok := chan.try_recv(newlyGeneratedChunks)
@@ -291,13 +293,13 @@ run_game :: proc(app: ^Application) {
 
 		mouseX, mouseY := glfw.GetCursorPos(app.glfw_window)
 
-		relX, relY := f32(mouseX - lastMouseX), f32(mouseY - lastMouseY)
+		relX, relY := f32(mouseX - lastMouseX) / deltaTime, f32(mouseY - lastMouseY) / deltaTime
 
 		lastMouseX = mouseX
 		lastMouseY = mouseY
 
-		app.camera.yaw += relX * deltaTime * 19
-		app.camera.pitch -= relY * deltaTime * 19
+		app.camera.yaw += relX * deltaTime * 1
+		app.camera.pitch -= relY * deltaTime * 1
 
 		app.camera.pitch = glsl.clamp(app.camera.pitch, -89, 89)
 
