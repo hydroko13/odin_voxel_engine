@@ -1,4 +1,4 @@
-package voxel_engine;
+package voxel_engine
 
 import "core:math/linalg/glsl"
 
