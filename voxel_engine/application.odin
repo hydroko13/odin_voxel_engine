@@ -31,6 +31,12 @@ ChunkWorkerArgs :: struct {
 	recv_chan: chan.Chan(glsl.ivec2, .Recv),
 }
 
+ChunkPosWithDist :: struct {
+	pos: glsl.ivec2,
+	dist: int
+}
+
+
 chunk_gen_worker :: proc(args: ChunkWorkerArgs) {
 
 	send_chan := args.send_chan
@@ -53,6 +59,7 @@ chunk_gen_worker :: proc(args: ChunkWorkerArgs) {
 		chunk.index_data = nil
 		chunk.vertex_data = nil
 
+		time.sleep(time.Millisecond * 10)
 
 	}
 }
@@ -126,7 +133,7 @@ init_game :: proc() -> Application {
 
 	// rendering.unbind_vertex_array()
 
-	app.camera = Camera{90.0, 0.0, glsl.vec3{0.0, 80, 0.0}}
+	app.camera = Camera{90.0, -90, glsl.vec3{0.0, 130, 0.0}}
 
 	app.projection = glsl.mat4Perspective(
 		glsl.radians(f32(45.0)),
@@ -238,26 +245,38 @@ run_game :: proc(app: ^Application) {
 		chunk_origin_x := int(math.floor(app.camera.pos.x / 16.0))
 		chunk_origin_y := int(math.floor(app.camera.pos.z / 16.0))
 
-		for x in -gen_radius ..= gen_radius {
-			for z in -gen_radius ..= gen_radius {
+
+		positions_to_send := make([dynamic]ChunkPosWithDist, 0, 64)
+
+		for x in -gen_radius..=gen_radius {
+			for z in -gen_radius..=gen_radius {
 
 				dist := x * x + z * z
 				if dist < gen_radius * gen_radius {
-					pos := glsl.ivec2{i32(x + chunk_origin_x), i32(z + chunk_origin_y)}
-
-					if !slice.contains(chunksPositionsAlreadyGenerated[:], pos) {
-
-						ok := chan.try_send(chunkPositionsToGenerate, pos)
-						if ok {
-							append(&chunksPositionsAlreadyGenerated, pos)
-						}
-					}
+					append(&positions_to_send, ChunkPosWithDist{glsl.ivec2{i32(x), i32(z)}, dist})
 				}
 
 
 			}
 		}
 
+		slice.sort_by(positions_to_send[:], proc(i, j : ChunkPosWithDist) -> bool {
+			return i.dist < j.dist
+		})
+
+		for cp in positions_to_send {
+			p := cp.pos
+			pos := glsl.ivec2{p.x + i32(chunk_origin_x), p.y + i32(chunk_origin_y)}
+
+			if !slice.contains(chunksPositionsAlreadyGenerated[:], pos) {
+
+				ok := chan.try_send(chunkPositionsToGenerate, pos)
+				if ok {
+					append(&chunksPositionsAlreadyGenerated, pos)
+				}
+			}
+
+		}
 
 		mouseX, mouseY := glfw.GetCursorPos(app.glfw_window)
 
