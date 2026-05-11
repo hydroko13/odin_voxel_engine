@@ -15,14 +15,17 @@ PackedTextureData :: struct {
 TexturePacker :: struct {
     atlas_image_data: ^[1600 * 1600 * 4]u8,
     packed_textures: map[u32]PackedTextureData,
-    texture_directory: string
+    texture_directory: string,
+    texture_id_next: u32
 }
+
 
 
 create_texture_packer :: proc(texture_directory: string) -> TexturePacker {
     packer: TexturePacker
 
     packer.atlas_image_data = new([1600 * 1600 * 4]u8)
+    packer.texture_id_next = 0
     
     packer.packed_textures = make(map[u32]PackedTextureData)
     packer.texture_directory, _ = filepath.join({"resources", texture_directory}, context.allocator)
@@ -43,7 +46,7 @@ create_texture_packer :: proc(texture_directory: string) -> TexturePacker {
     return packer
 }
 
-texture_packer_add_file :: proc(packer: ^TexturePacker, image_name: string) {
+texture_packer_add_file :: proc(packer: ^TexturePacker, image_name: string) -> u32 {
     texture_path, _ := filepath.join({packer.texture_directory, image_name}, context.allocator)
 
     tex_img, _ := image.load_from_file(texture_path)
@@ -101,10 +104,15 @@ texture_packer_add_file :: proc(packer: ^TexturePacker, image_name: string) {
         }
     }
 
+    map_insert(&packer.packed_textures, packer.texture_id_next, PackedTextureData{f32(add_x) / 1600, f32(add_x) / 1600 + f32(tex_img.width) / 1600, f32(add_y) / 1600, f32(add_y) / 1600 + f32(tex_img.height) / 1600})
+    imgi := packer.texture_id_next
+    packer.texture_id_next += 1
 
     image.destroy(tex_img)
     
     delete(texture_path, context.allocator)
+
+    return imgi
 }
 
 

@@ -30,6 +30,7 @@ Application :: struct {
 ChunkWorkerArgs :: struct {
 	send_chan: chan.Chan(Chunk, .Send),
 	recv_chan: chan.Chan(glsl.ivec2, .Recv),
+	packer_ptr: ^TexturePacker
 }
 
 ChunkPosWithDist :: struct {
@@ -42,7 +43,7 @@ chunk_gen_worker :: proc(args: ChunkWorkerArgs) {
 
 	send_chan := args.send_chan
 	recv_chan := args.recv_chan
-
+	packer_ptr := args.packer_ptr
 
 	for {
 
@@ -51,7 +52,7 @@ chunk_gen_worker :: proc(args: ChunkWorkerArgs) {
 		chunk: Chunk = create_chunk(pos.x, pos.y)
 
 		generate_chunk(&chunk)
-		update_chunk(&chunk)
+		update_chunk(&chunk, packer_ptr)
 
 
 		chan.send(send_chan, chunk)
@@ -108,7 +109,7 @@ init_game :: proc() -> Application {
 	app.block_texture_packer = create_texture_packer("block_textures")
 
 	texture_packer_add_file(&app.block_texture_packer, "dirt.png")
-	texture_packer_add_file(&app.block_texture_packer, "grass_side.png")
+	fmt.println(texture_packer_add_file(&app.block_texture_packer, "grass_side.png"))
 	texture_packer_add_file(&app.block_texture_packer, "grass_top.png")
 
 
@@ -168,6 +169,7 @@ run_game :: proc(app: ^Application) {
 
 	viewLoc := gl.GetUniformLocation(app.shader_program.program_handle, "view")
 	projLoc := gl.GetUniformLocation(app.shader_program.program_handle, "proj")
+	texLoc := gl.GetUniformLocation(app.shader_program.program_handle, "block_tex")
 
 	lastMouseX, lastMouseY := glfw.GetCursorPos(app.glfw_window)
 	lastTime := glfw.GetTime()
@@ -200,11 +202,12 @@ run_game :: proc(app: ^Application) {
 			ChunkWorkerArgs {
 				chan.as_send(newlyGeneratedChunks),
 				chan.as_recv(chunkPositionsToGenerate),
+				&app.block_texture_packer
 			},
 			chunk_gen_worker,
 			init_context = context,
 		)
-
+		
 		append(&workerThreads, chunkGenThread)
 
 
@@ -307,6 +310,11 @@ run_game :: proc(app: ^Application) {
 		gl.UniformMatrix4fv(viewLoc, 1, gl.FALSE, raw_data(&viewMat))
 
 		gl.UniformMatrix4fv(projLoc, 1, gl.FALSE, raw_data(&app.projection))
+
+		gl.ActiveTexture(gl.TEXTURE0)
+
+		gl.Uniform1i(texLoc, 0)
+
 
 		for &chunk in app.chunks {
 			draw_chunk(&chunk, &app.shader_program)

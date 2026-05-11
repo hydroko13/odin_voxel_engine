@@ -26,8 +26,9 @@ create_texture :: proc() -> Texture {
 }
 
 write_texture :: proc(tex: ^Texture, image_data_ptr: rawptr, width: i32, height: i32) {
-    bind_texture(tex)
+
     gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, image_data_ptr);
+    gl.GenerateMipmap(gl.TEXTURE_2D)
 }
 
 

@@ -9,7 +9,7 @@ import gl "vendor:OpenGL"
 
 
 ChunkData :: struct {
-	block_data: [16][16][256]u16,
+	block_data: [16][16][100]u16,
 }
 
 Chunk :: struct {
@@ -31,7 +31,7 @@ create_chunk :: proc(chunk_x: i32, chunk_y: i32) -> Chunk {
 	chunk.chunk_y = chunk_y
 
 	chunk.chunk_data_ptr = new(ChunkData)
-	chunk.vertex_data = make([dynamic]f32, 0, 100000)
+	chunk.vertex_data = make([dynamic]f32, 0, 50000)
 	chunk.index_data = make([dynamic]u32, 0, 10000)
 	chunk.model = glsl.mat4Translate(glsl.vec3{16.0 * f32(chunk_x), 0.0, 16.0 * f32(chunk_y)})
 
@@ -52,10 +52,10 @@ generate_chunk :: proc(chunk: ^Chunk) {
 						((f64(chunk.chunk_y) * 16.0 + f64(z)) / 40.0),
 					},
 				) *
-					5 +
+					3 +
 				64,
 			)
-			for y in 0 ..< 256 {
+			for y in 0 ..< 100 {
 				if y > height {
 					chunk.chunk_data_ptr.block_data[x][z][y] = 0
 				} else {
@@ -94,8 +94,8 @@ upload_chunk :: proc(chunk: ^Chunk) {
 		&chunk.index_data[0],
 	)
 
-	rendering.vertex_array_attrib(&chunk.vao, 0, gl.FLOAT, 3, size_of(f32) * 6, 0)
-	rendering.vertex_array_attrib(&chunk.vao, 1, gl.FLOAT, 3, size_of(f32) * 6, 3 * size_of(f32))
+	rendering.vertex_array_attrib(&chunk.vao, 0, gl.FLOAT, 3, size_of(f32) * 5, 0)
+	rendering.vertex_array_attrib(&chunk.vao, 1, gl.FLOAT, 2, size_of(f32) * 5, 3 * size_of(f32))
 
 	rendering.unbind_vertex_buffer()
 
@@ -103,7 +103,7 @@ upload_chunk :: proc(chunk: ^Chunk) {
 
 }
 
-update_chunk :: proc(chunk: ^Chunk) {
+update_chunk :: proc(chunk: ^Chunk, packer: ^TexturePacker) {
 
 	clear(&chunk.vertex_data)
 	clear(&chunk.index_data)
@@ -112,7 +112,7 @@ update_chunk :: proc(chunk: ^Chunk) {
 
 	for x in 0 ..< 16 {
 		for z in 0 ..< 16 {
-			for y in 0 ..< 256 {
+			for y in 0 ..< 100 {
 				block_id := chunk.chunk_data_ptr.block_data[x][z][y]
 
 				if block_id != 0 {
@@ -159,41 +159,41 @@ update_chunk :: proc(chunk: ^Chunk) {
 					}
 
 
+					packedtexdata := packer.packed_textures[1]
+
 					if include_left {
 						append(&chunk.vertex_data, 0.0 + f32(x))
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y1)
 
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y1)
+						
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y2)
+
 
 
 						append(&chunk.vertex_data, 0.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y2)
+
 
 
 						append(&chunk.index_data, u32(0 + indices_idx))
@@ -212,36 +212,35 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y1)
+
 
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y1)
+
 
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y2)
+
 
 
 						append(&chunk.vertex_data, 0.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y2)
 
 
 
@@ -262,36 +261,35 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y1)
+
 
 
 						append(&chunk.vertex_data, 0.0 + f32(x))
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y1)
 
 
 						append(&chunk.vertex_data, 0.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y2)
+
 
 
 						append(&chunk.vertex_data, 0.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y2)
+
 
 
 
@@ -312,36 +310,35 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y1)
+
 
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y1)
+
 
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y2)
 
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y2)
+
 
 
 
@@ -363,36 +360,36 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y1)
+
 
 
 						append(&chunk.vertex_data, 0.0 + f32(x))
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y1)
+
 
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y2)
+
 
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 0.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y2)
+
 
 
 
@@ -415,36 +412,33 @@ update_chunk :: proc(chunk: ^Chunk) {
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y1)
 
 
 						append(&chunk.vertex_data, 0.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y1)
+
 
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 1.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x2)
+						append(&chunk.vertex_data, packedtexdata.y2)
 
 
 						append(&chunk.vertex_data, 1.0 + f32(x))
 						append(&chunk.vertex_data, 1.0 + f32(y))
 						append(&chunk.vertex_data, 0.0 + f32(z))
 
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 1.0)
-						append(&chunk.vertex_data, 0.0)
+						append(&chunk.vertex_data, packedtexdata.x1)
+						append(&chunk.vertex_data, packedtexdata.y2)
 
 
 
@@ -466,7 +460,7 @@ update_chunk :: proc(chunk: ^Chunk) {
 		}
 	}
 
-	assert(len(chunk.vertex_data) % 6 == 0) // 6 floats per vertex
+	assert(len(chunk.vertex_data) % 5 == 0) // 6 floats per vertex
 	assert(len(chunk.index_data) % 6 == 0)
 
 }
