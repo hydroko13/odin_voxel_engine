@@ -23,7 +23,8 @@ Application :: struct {
 	camera:         Camera,
 	projection:     glsl.mat4,
 	chunks:         [dynamic]Chunk,
-	block_texture_packer: TexturePacker
+	block_texture_packer: TexturePacker,
+	blocks_texture: rendering.Texture,
 }
 
 ChunkWorkerArgs :: struct {
@@ -58,8 +59,6 @@ chunk_gen_worker :: proc(args: ChunkWorkerArgs) {
 		chunk.chunk_data_ptr = nil
 		chunk.index_data = nil
 		chunk.vertex_data = nil
-
-		time.sleep(time.Millisecond * 10)
 
 	}
 }
@@ -103,15 +102,24 @@ init_game :: proc() -> Application {
 		transmute(string)frag_dat,
 	)
 
+	rendering.use_shader_program(&app.shader_program)
+	gl.Enable(gl.DEPTH_TEST)
+
 	app.block_texture_packer = create_texture_packer("block_textures")
 
 	texture_packer_add_file(&app.block_texture_packer, "dirt.png")
 	texture_packer_add_file(&app.block_texture_packer, "grass_side.png")
 	texture_packer_add_file(&app.block_texture_packer, "grass_top.png")
 
-	rendering.use_shader_program(&app.shader_program)
 
-	gl.Enable(gl.DEPTH_TEST)
+	app.blocks_texture = rendering.create_texture()
+
+	rendering.write_texture(&app.blocks_texture, app.block_texture_packer.atlas_image_data, 1600, 1600)
+
+
+	
+
+	
 	//gl.Enable(gl.CULL_FACE)
 
 
@@ -318,6 +326,7 @@ cleanup_game :: proc(app: ^Application) {
 	}
 
 	delete(app.chunks)
+	rendering.delete_texture(&app.blocks_texture)
 	delete_texture_packer(&app.block_texture_packer)
 
 	rendering.delete_shader_program(&app.shader_program)

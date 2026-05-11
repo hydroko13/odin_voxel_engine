@@ -1,0 +1,42 @@
+package rendering
+
+import gl "vendor:OpenGL"
+
+
+Texture :: struct {
+    texture_handle: u32
+}
+
+create_texture :: proc() -> Texture {
+    tex: Texture
+
+    gl.GenTextures(1, &tex.texture_handle)
+
+    bind_texture(&tex)
+
+    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
+    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT)
+
+    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+    gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+    
+    
+
+    return tex
+}
+
+write_texture :: proc(tex: ^Texture, image_data_ptr: rawptr, width: i32, height: i32) {
+    bind_texture(tex)
+    gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, image_data_ptr);
+}
+
+
+bind_texture :: proc(texture: ^Texture) {
+    gl.BindTexture(gl.TEXTURE_2D, texture.texture_handle)
+
+}
+
+
+delete_texture :: proc(texture: ^Texture) {
+    gl.DeleteTextures(1, &texture.texture_handle)
+}
