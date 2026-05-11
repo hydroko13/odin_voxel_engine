@@ -13,7 +13,7 @@ PackedTextureData :: struct {
 }
 
 TexturePacker :: struct {
-    atlas_image_data: ^[1600 * 1600 * 4]u8,
+    atlas_image_data: ^[2000 * 2000 * 4]u8,
     packed_textures: map[u32]PackedTextureData,
     texture_directory: string,
     texture_id_next: u32
@@ -24,15 +24,15 @@ TexturePacker :: struct {
 create_texture_packer :: proc(texture_directory: string) -> TexturePacker {
     packer: TexturePacker
 
-    packer.atlas_image_data = new([1600 * 1600 * 4]u8)
+    packer.atlas_image_data = new([2000 * 2000 * 4]u8)
     packer.texture_id_next = 0
     
     packer.packed_textures = make(map[u32]PackedTextureData)
     packer.texture_directory, _ = filepath.join({"resources", texture_directory}, context.allocator)
 
-    for x in 0..<1600 {
-        for y in 0..<1600 {
-            pix_idx := 1600 * y + x
+    for x in 0..<2000 {
+        for y in 0..<2000 {
+            pix_idx := 2000 * y + x
 
             packer.atlas_image_data[0 + pix_idx*4] = 0
             packer.atlas_image_data[1 + pix_idx*4] = 0
@@ -56,13 +56,13 @@ texture_packer_add_file :: proc(packer: ^TexturePacker, image_name: string) -> u
 
     
 
-    outer2: for x in 0..<1600 {
-        for y in 0..<1600 {
+    outer2: for x in 0..<2000 {
+        for y in 0..<2000 {
             
-            if (tex_img.width-1)+x >= 1600 {
+            if (tex_img.width-1)+x >= 2000 {
                 continue
             }
-            if (tex_img.height-1)+y >= 1600 {
+            if (tex_img.height-1)+y >= 2000 {
                 continue
             }
 
@@ -71,7 +71,7 @@ texture_packer_add_file :: proc(packer: ^TexturePacker, image_name: string) -> u
             outer: for offset_x in 0..<tex_img.width {
                 for offset_y in 0..<tex_img.height {
                 
-                    pix_idx := 1600 * (y + offset_y) + (x + offset_x)
+                    pix_idx := 2000 * (y + offset_y) + (x + offset_x)
 
                     if (packer.atlas_image_data[pix_idx*4 + 0] != 0) || (packer.atlas_image_data[pix_idx*4 + 1] != 0) || (packer.atlas_image_data[pix_idx*4 + 2] != 0) || (packer.atlas_image_data[pix_idx*4 + 3] != 0) {
                         found_nonblank_pixel = true
@@ -93,7 +93,7 @@ texture_packer_add_file :: proc(packer: ^TexturePacker, image_name: string) -> u
     for offset_x in 0..<tex_img.width {
         for offset_y in 0..<tex_img.height {
         
-            pix_idx := 1600 * (add_y + offset_y) + (add_x + offset_x)
+            pix_idx := 2000 * (add_y + offset_y) + (add_x + offset_x)
             tex_idx := tex_img.width * offset_y + offset_x
 
             packer.atlas_image_data[pix_idx * 4 + 0] = tex_img.pixels.buf[tex_idx * 4 + 0]
@@ -104,7 +104,7 @@ texture_packer_add_file :: proc(packer: ^TexturePacker, image_name: string) -> u
         }
     }
 
-    map_insert(&packer.packed_textures, packer.texture_id_next, PackedTextureData{f32(add_x) / 1600, f32(add_x) / 1600 + f32(tex_img.width) / 1600, f32(add_y) / 1600, f32(add_y) / 1600 + f32(tex_img.height) / 1600})
+    map_insert(&packer.packed_textures, packer.texture_id_next, PackedTextureData{f32(add_x), f32(add_x + tex_img.width), f32(add_y), f32(add_y + tex_img.height)})
     imgi := packer.texture_id_next
     packer.texture_id_next += 1
 

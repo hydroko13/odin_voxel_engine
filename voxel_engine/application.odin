@@ -24,7 +24,7 @@ Application :: struct {
 	projection:     glsl.mat4,
 	chunks:         [dynamic]Chunk,
 	block_texture_packer: TexturePacker,
-	blocks_texture: rendering.Texture,
+	blocks_rexture: rendering.Rexture,
 }
 
 ChunkWorkerArgs :: struct {
@@ -74,6 +74,7 @@ init_game :: proc() -> Application {
 	glfw.WindowHint(glfw.CONTEXT_VERSION_MAJOR, 3)
 	glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3)
 	glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
+	glfw.WindowHint(glfw.DEPTH_BITS, 24)
 
 	app.glfw_window = glfw.CreateWindow(1280, 720, "Odin Voxel Engine", nil, nil)
 
@@ -114,9 +115,9 @@ init_game :: proc() -> Application {
 	texture_packer_add_file(&app.block_texture_packer, "grass_top.png")
 
 
-	app.blocks_texture = rendering.create_texture()
+	app.blocks_rexture = rendering.create_rexture()
 
-	rendering.write_texture(&app.blocks_texture, app.block_texture_packer.atlas_image_data, 1600, 1600)
+	rendering.write_rexture(&app.blocks_rexture, app.block_texture_packer.atlas_image_data, 2000, 2000)
 
 
 	
@@ -334,7 +335,7 @@ cleanup_game :: proc(app: ^Application) {
 	}
 
 	delete(app.chunks)
-	rendering.delete_texture(&app.blocks_texture)
+	rendering.delete_rexture(&app.blocks_rexture)
 	delete_texture_packer(&app.block_texture_packer)
 
 	rendering.delete_shader_program(&app.shader_program)
